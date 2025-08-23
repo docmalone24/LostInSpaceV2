@@ -1,86 +1,74 @@
-/*
- * 30 Days - Lost in Space
- * Day 3 - I'm Worried About Your Battery Levels
+/* <-- Hi there! The lines of text inside these symbols are just notes for us humans to read.
+ * They help us understand what the code is doing. The Arduino doesn't read these notes at all.
  *
- * Learn more at https://learn.inventr.io/adventure
+ * Our project: "30 Days - Lost in Space"
+ * Today's mission: "Day 2 - It's Really Dark in Here"
  *
- * A light that is always on is also always drawing power, and right now your
- * battery power is limited.  Let's find a way to control your light so that
- * we can turn it off when it's not needed, and save battery power that you'll
- * be needing in the days ahead.
+ * Learn more at: https://learn.inventr.io/adventure
  *
- * Alex Eschenauer
- * David Schmidt
+ * Today, we're going to learn about LEDs (Light Emitting Diodes). These are tiny lights
+ * that can glow when we pass electricity through them. They are very small but very strong
+ * and can last a long time. You can find them in different colors and sizes.
+ *
+ * Teachers: Alex Eschenauer & David Schmidt
  */
-
+ 
 /*
- * Arduino concepts introduced/documented in this lesson.
- * - if statement (https://www.arduino.cc/reference/en/language/structure/control-structure/if/)
- * - else control structure (https://www.arduino.cc/reference/en/language/structure/control-structure/else/)
- * - comparison operator == (https://www.arduino.cc/reference/en/language/structure/comparison-operators/equalto/)
- * - digitalRead() (https://www.arduino.cc/reference/en/language/functions/digital-io/digitalread/)
+ * Here, we'll list a few important ideas and parts that we'll learn about today:
+ * - A Circuit: It's like a circle that electricity travels around. It needs to be closed, with no breaks.
+ * - Current: It's the flow of electricity.
+ * - Voltage: It's the force pushing the electricity.
+ * - Resistance: It's something that slows down the electricity.
  *
- * Parts and electronics concepts introduced in this lesson.
- * - Dual Inline Package (DIP) switches.
- * - Resistors
+ * And here are some things we'll use with our Arduino HERO:
+ * - Breadboard: A tool that helps us build our circuit without any soldering.
+ * - 5V pins: These are the pins on our HERO that give 5 volts of power.
+ * - GND pins: These pins are connected to the ground, they complete our circuit.
+ *
+ * We'll also learn about these programming ideas:
+ * - Arduino language: A special programming language that helps us talk to our HERO.
+ * - Comments: Notes in the code, like this one, that help us understand what is going on.
+ * - Variables and Constants: These are places where we can store information.
+ * - Functions: These are chunks of code that perform a specific task.
  */
-
-#include "Arduino.h"  // include information about our HERO
-
-#define CABIN_LIGHTS_PIN 12        // Control our lander's lights using the HERO's pin 12
-#define CABIN_LIGHTS_SWITCH_PIN 2  // Connect our light switch to pin 2
-
-// setup() gets called ONCE when our sketch is first run (after upload, when power is
-// restored, or when the HERO's reset button is pressed)
+ 
+// We start by including this line of code, which helps our HERO work properly with the Arduino program.
+#include "Arduino.h"
+ 
+/*
+ * Today we are going to make a big light turn on to light up our lander! We'll use an LED for now to
+ * test our setup. We will use a digital pin on our HERO to control our lander's light.
+ *
+ * In our code, we often use constants. These are like nicknames that we give to specific values. This
+ * makes our code easier to read and change later if needed. For example, instead of remembering a pin
+ * number, we can just give it a nickname like CABIN_LIGHTS_PIN.
+ *
+ * One way to define constants is by using a command called #define.  Using this we can give a name
+ * (or nickname) to the value that follows the name. You'll notice that the nickname is in capital letters,
+ * which is a way to remind us that it's a constant and can't change.
+ *
+ * In this #define we give the name "CABIN_LIGHTS_PIN" the value of "12".  Whenever you see
+ * in this sketch it will have the value of "12".
+ */
+#define CABIN_LIGHTS_PIN 12   // This is the nickname for the pin connected to our LED.
+ 
+/*
+ * The setup function is where we prepare everything before we start. We only run this function once each
+ * time we turn on our HERO or reset it. Here, we are setting up our CABIN_LIGHTS_PIN as an output pin, so
+ * we can control our light with it.
+ */
 void setup() {
-  pinMode(CABIN_LIGHTS_PIN, OUTPUT);        // Set light control pin as an OUTPUT
-  pinMode(CABIN_LIGHTS_SWITCH_PIN, INPUT);  // Since we read from the switch, this pin is an INPUT
+  pinMode(CABIN_LIGHTS_PIN, OUTPUT);    // We will control our lander's lights as an OUTPUT.
 }
-
-// After setup() is executed once the loop() function is called.  Every time it completes it
-// is immediately called again, over and over again.
+ 
+/*
+ * After the setup function, the loop function starts. This function keeps repeating over and over, like
+ * a circle. Here, we are making our light turn on and off in a repeating pattern.
+ */
 void loop() {
-/*
-  // First version of our loop.  It works, but could be shorter, more efficient and
-  // more understandable.  Commented out but left in to show how we can incrementally
-  // improve our code.
-
-  byte switch_setting;
-
-  switch_setting = digitalRead(CABIN_LIGHTS_SWITCH_PIN);   // Read state of light switch
-
-  if (switch_setting == HIGH) {
-    digitalWrite(CABIN_LIGHTS_PIN, HIGH);  // if switch is ON then turn on our lander's light
-  }
-
-  if (switch_setting == LOW) {
-    digitalWrite(CABIN_LIGHTS_PIN, LOW);  // if switch is OFF then turn off lander's light
-  }
-*/
-
-/*
-  // Second version of our loop.  Better.  Define the variable and set it in the same statement
-  // and then use the else statement to show that we should always execute ONE of our two
-  // actions.
-
-  byte switch_setting = digitalRead(CABIN_LIGHTS_SWITCH_PIN);
-
-  if (switch_setting == HIGH) {
-    digitalWrite(CABIN_LIGHTS_PIN, HIGH);  // Switch is ON, turn on our lander's light
-  } else {
-    digitalWrite(CABIN_LIGHTS_PIN, LOW);  // Switch is OFF, turn off lander's light
-  }
-*/
-
-  // Final version!  Since we only use our value once, just do our digitalRead once and
-  // remove the (now unnecessary) variable.  Clean, fast and less likely to allow bugs
-  // to be introduced.
-
-  // Each time loop() begins digitalRead() reads the input pin attached to the switch and
-  // compares the value read to HIGH (switch is ON)
-  if (digitalRead(CABIN_LIGHTS_SWITCH_PIN) == HIGH) {
-    digitalWrite(CABIN_LIGHTS_PIN, HIGH);  // Switch is ON, turn on our lander's light
-  } else {
-    digitalWrite(CABIN_LIGHTS_PIN, LOW);  // Switch is OFF, turn off lander's light
-  }
+  digitalWrite(CABIN_LIGHTS_PIN, HIGH);  // This line turns the lander's light ON.
+  delay(1000);                           // Wait for one second (1000 milliseconds) with the light ON.
+  digitalWrite(CABIN_LIGHTS_PIN, LOW);   // This line turns the lander's light OFF.
+  delay(100);                            // Wait for a tenth of a second (100 milliseconds) with the light OFF.
 }
+ 
