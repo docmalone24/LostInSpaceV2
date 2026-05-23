@@ -1,121 +1,101 @@
 /*
  * 30 Days - Lost in Space
- * Day 8 - Adding some color to this dark place
+ * Day 7 - We still need to keep an eye on this
  *
  * Learn more at https://learn.inventr.io/adventure
  *
- * Previously we have used different color LEDs with our HERO, but when we require
- * more output, or desire a color different from the available colors we use a more
- * flexible "RGB LED".  RGB LEDs have a red, a green and a blue LED packaged into a
- * single LED package.  By using something called Pulse Width Modulation (PWM) we
- * can vary the intensity of each LED and come up a wide variety of colors.
+ * Now we will use the circuit from Day 6 and use the value read from the photoresistor
+ * to simulate charging our lander's battery.  Our battery is currently drained
+ * (current level is 0) and we will stop charging once the battery is full.
  *
  * Alex Eschenauer
  * David Schmidt
- * Greg Lyzenga
  */
  
 /*
  * Arduino concepts introduced/documented in this lesson.
- * - analogWrite(): Used to control a PWM pin, giving a variable intensity
- * - Passing variables into functions
+ * - "+=" operator.
+ * - defining our own functions.
  *
  * Parts and electronics concepts introduced in this lesson.
- * - Common Cathode (single grounded pin) RGB LED.
+ * - No new parts as this sketch uses the same circuit as Day 6
  */
  
 // Explicitly include Arduino.h
 #include "Arduino.h"
  
-/*
- * Each color in an RGB LED is controlled with a different pin on our HERO board.
- *
- * NOTE: Only pins 3, 5, 6, 9, 10 and 11 on the HERO board support PWM which is
- *       indicated on the board by preceding those pin numbers on the HERO board
- *       with a tilde ('~') character.  Only those pins support PWM and analogWrite().
- */
-const byte RED_PIN = 11;    // PWM pin controlling the red leg of our RGB LED
-const byte GREEN_PIN = 10;  // PWM pin ccontrolling the green leg of our RGB LED
-const byte BLUE_PIN = 9;    // PWM pin ccontrolling the blue leg of our RGB LED
+// Our photoresistor will give us a reading of the current light level on this analog pin
+const byte PHOTORESISTOR_PIN = A0;  // Photoresistor analog pin
  
-/*
- * Define a set of constants to represent 4 different brightness levels for our
- * RGB LED using PWM pins and analogWrite().  PWM can set values ranging from 0
- * to 255 which we will demonstrate by adding 64 (roughly 1/4 of that range) to
- * each preceding value.
- *
- * NOTE: this also demonstrates that our constants can be computed using an expression
- *       that includes any previouly defined constant.  However, the expression cannot
- *       include variables or values that could change during execution.
- */
-const byte OFF = 0;                 // Selected color is OFF
-const byte DIM = 64;                // Selected color is 1/4 intensity
-const byte BRIGHTER = DIM + 64;     // Selected color is 1/2 intensity
-const byte BRIGHT = BRIGHTER + 64;  // Selected color is 3/4 intensity
-const byte BRIGHTEST = 255;         // Selected color is maximum intensity (255)
- 
-// We can change this constant here, in one place, to change how long each color is displayed.
-const unsigned int COLOR_DELAY = 500;  // show each color for 500 milliseconds
+// Use an unsigned, 16 bit value (0 - 65535) for maximum battery capacity
+const unsigned int BATTERY_CAPACITY = 50000;  // Maximum battery capacity
  
 void setup() {
-  // Set each of our PWM pins as OUTPUT pins
-  pinMode(RED_PIN, OUTPUT);
-  pinMode(GREEN_PIN, OUTPUT);
-  pinMode(BLUE_PIN, OUTPUT);
+  pinMode(PHOTORESISTOR_PIN, INPUT);  // Input current light level from photoresistor
+ 
+  Serial.begin(9600);  // Initialize Serial Monitor to 9600 baud
 }
  
-// Each time through loop() we display some of the color variations available
-// using an RGB LED.
+// Use global here because this variable is accessed by both loop() and our custom
+// function.  (In later lessons we will show how to avoid globals.)
+unsigned int battery_level = 0;  // Current battery charge level (set to 0 first time)
+ 
+/*
+ * Each time through our loop() we read the current light level from the photoresistor
+ * and add that to our current battery level to simulate charging our battery.
+ *
+ * We then display current charge level on the Serial Monitor.
+ */
 void loop() {
-  // First demonstrate our different PWM levels by slowly brightening our red LED
-  displayColor(OFF, OFF, OFF);  // OFF!
-  delay(COLOR_DELAY);
-  displayColor(DIM, OFF, OFF);  // Display red LED at 1/4 intensity
-  delay(COLOR_DELAY);
-  displayColor(BRIGHTER, OFF, OFF);  // Display red LED at 1/2 intensity
-  delay(COLOR_DELAY);
-  displayColor(BRIGHT, OFF, OFF);  // Display red LED at 3/4 intensity
-  delay(COLOR_DELAY);
-  displayColor(BRIGHTEST, OFF, OFF);  // Display red LED at FULL intensity
-  delay(COLOR_DELAY);
  
-  // Display our other two LED colors at half intensity
-  displayColor(OFF, BRIGHT, OFF);  // Display the green LED
-  delay(COLOR_DELAY);
-  displayColor(OFF, OFF, BRIGHT);  // Display the blue LED
-  delay(COLOR_DELAY);
+  // Display battery information on the Serial Monitor
+  if (battery_level < BATTERY_CAPACITY) {  // If battery is not fully charged..
+    /*
+     * Here we introduce a new arithmetic operator, "+=".
+     * When you wish to add a value to an existing variable you *could* write it like
+     * "value = value + additional;".  But the Arduino C++ language allows you to avoid
+     * the duplication.  The += operator allows us to add to an existing variable value.
+     *
+     * In the following statement we will add our current light level to our existing
+     * battery level.
+     */
+    battery_level += analogRead(PHOTORESISTOR_PIN);  // read light level and add to battery level
+    if (battery_level > BATTERY_CAPACITY) {          // If this would make charge over 100%...
+      battery_level = BATTERY_CAPACITY;              // ...set current level to maximum capacity.
+    }
+  }
  
-  // Now show various colors (at half intensity) by mixing our three colors
-  displayColor(BRIGHT, BRIGHT, OFF);  // Display yellow by mixing red and green LEDs
-  delay(COLOR_DELAY);
-  displayColor(OFF, BRIGHT, BRIGHT);  // Display cyan by mixing green and blue LEDs
-  delay(COLOR_DELAY);
-  displayColor(BRIGHT, OFF, BRIGHT);  // Display magenta by mixing red and blue LEDs
-  delay(COLOR_DELAY);
+  /*
+   * Previously we have only used functions included in the Arduino C++ Language.  Here
+   * we demonstrate how we can use our own functions.  This keeps our main code cleaner
+   * and easier to understand.  All you need to know here is that this new function prints
+   * the current charge level on the Serial Monitor.
+   *
+   * If you need to know the details you can examine the full function declaration following
+   * our loop() code.
+   */
+  printBatteryChargeLevel();  // Display current charge percentage on Serial Monitor
  
-  // Display all of our LEDs to get white.
-  displayColor(BRIGHT, BRIGHT, BRIGHT);  // white
-  delay(COLOR_DELAY);
+  delay(100);
 }
  
 /*
- * displayColor() is a function that accepts three parameters representing the desired
- * intensity for each of the LEDs in the RGB LED.
+ * This is where our own function is defined to display the current battery charge
+ * level on the Serial Monitor.
  *
- * Each parameter passed must have a type (here we match what analogWrite() will use) and
- * a name to be used inside the function to refer to the parameter.  The parameters can all
- * be included on a single line like:
- * void displayColor( byte red_intensity, byte green_intensity, byte blue_intensity) {
+ * This function takes no parameters and returns no values (indicated by the "void" preceeding the name).
  *
- * However, if we display each parameter on it's own line we can add a comment to each
- * for additional clarity.
+ * If the battery is not fully charged yet we then print the current battery percentage
+ * to the Serial Monitor.
+ *
+ * If the battery is fully charged we display that to the serial monitor.
  */
-void displayColor(
-  byte red_intensity,    // red LED intensity (0-255)
-  byte green_intensity,  // green LED intensity (0-255)
-  byte blue_intensity    // blue LED intensity (0-255)
-) {
-  analogWrite(RED_PIN, red_intensity);      // Set red LED intensity using PWM
-  analogWrite(GREEN_PIN, green_intensity);  // Set green LED intensity using PWM
-  analogWrite(BLUE_PIN, blue_intensity);    // Set blue LED intensity using PWM
+void printBatteryChargeLevel() {
+  if (battery_level < BATTERY_CAPACITY) {  // if not fully charged
+    // Percentage of charge is current level divided by capacity, multiplied by 100 to get a percentage.
+    Serial.print(((double)battery_level / (double)BATTERY_CAPACITY) * 100);  // display charge % to Serial Monitor
+    Serial.println("%");
+  } else {
+    Serial.println("FULLY CHARGED");  // ...indicate fully charged on Serial Monitor
+  }
 }
