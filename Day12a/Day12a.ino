@@ -1,134 +1,220 @@
 /*
- * 30 Days - Lost in Space
- * Day 13 - HERO Security 101
- *
- * Learn more at https://learn.inventr.io/adventure
- *
- * Playing tones was fun, but now it's time to get back to business.  Let's use
- * the 4x4 button keypad input a Personal Identification Number (PIN) to unlock
- * access to the lander's control panel.
- *
- * Alex Eschenauer
- * David Schmidt
- * Greg Lyzenga
- */
+  Connect a piezo buzzer or speaker to pin 10 or select a new pin.
+  More info available at https://github.com/robsoncouto/arduino-songs                                                    
+  Code by Robson Couto, 2019
+*/
+#define NOTE_B0  31
+#define NOTE_C1  33
+#define NOTE_CS1 35
+#define NOTE_D1  37
+#define NOTE_DS1 39
+#define NOTE_E1  41
+#define NOTE_F1  44
+#define NOTE_FS1 46
+#define NOTE_G1  49
+#define NOTE_GS1 52
+#define NOTE_A1  55
+#define NOTE_AS1 58
+#define NOTE_B1  62
+#define NOTE_C2  65
+#define NOTE_CS2 69
+#define NOTE_D2  73
+#define NOTE_DS2 78
+#define NOTE_E2  82
+#define NOTE_F2  87
+#define NOTE_FS2 93
+#define NOTE_G2  98
+#define NOTE_GS2 104
+#define NOTE_A2  110
+#define NOTE_AS2 117
+#define NOTE_B2  123
+#define NOTE_C3  131
+#define NOTE_CS3 139
+#define NOTE_D3  147
+#define NOTE_DS3 156
+#define NOTE_E3  165
+#define NOTE_F3  175
+#define NOTE_FS3 185
+#define NOTE_G3  196
+#define NOTE_GS3 208
+#define NOTE_A3  220
+#define NOTE_AS3 233
+#define NOTE_B3  247
+#define NOTE_C4  262
+#define NOTE_CS4 277
+#define NOTE_D4  294
+#define NOTE_DS4 311
+#define NOTE_E4  330
+#define NOTE_F4  349
+#define NOTE_FS4 370
+#define NOTE_G4  392
+#define NOTE_GS4 415
+#define NOTE_A4  440
+#define NOTE_AS4 466
+#define NOTE_B4  494
+#define NOTE_C5  523
+#define NOTE_CS5 554
+#define NOTE_D5  587
+#define NOTE_DS5 622
+#define NOTE_E5  659
+#define NOTE_F5  698
+#define NOTE_FS5 740
+#define NOTE_G5  784
+#define NOTE_GS5 831
+#define NOTE_A5  880
+#define NOTE_AS5 932
+#define NOTE_B5  988
+#define NOTE_C6  1047
+#define NOTE_CS6 1109
+#define NOTE_D6  1175
+#define NOTE_DS6 1245
+#define NOTE_E6  1319
+#define NOTE_F6  1397
+#define NOTE_FS6 1480
+#define NOTE_G6  1568
+#define NOTE_GS6 1661
+#define NOTE_A6  1760
+#define NOTE_AS6 1865
+#define NOTE_B6  1976
+#define NOTE_C7  2093
+#define NOTE_CS7 2217
+#define NOTE_D7  2349
+#define NOTE_DS7 2489
+#define NOTE_E7  2637
+#define NOTE_F7  2794
+#define NOTE_FS7 2960
+#define NOTE_G7  3136
+#define NOTE_GS7 3322
+#define NOTE_A7  3520
+#define NOTE_AS7 3729
+#define NOTE_B7  3951
+#define NOTE_C8  4186
+#define NOTE_CS8 4435
+#define NOTE_D8  4699
+#define NOTE_DS8 4978
+#define REST      0
  
-/*
- * Arduino concepts introduced/documented in this lesson.
- * - return:  Used by functions to return a single value and return immediately
- *            to the caller of the function.
- * - boolean type: bool is used for a value that can be "true" or "false"
- *                 NOTE: when testing values for true/false the value 0 is considered
- *                       "false" and any non-zero value is considered "true".
- *
- * Parts and electronics concepts introduced in this lesson.
- */
  
-// Explicitly include Arduino.h
-#include "Arduino.h"
+// change this to make the song slower or faster
+int tempo = 114;
  
-// Include Keypad library#include <Keypad.h>
-#include <Keypad.h>
+// change this to whichever pin you want to use
+int buzzer = 10;
  
-// Our HERO keypad has 4 rows, each with 4 columns.
-const byte ROWS = 4;
-const byte COLS = 4;
+// notes of the moledy followed by the duration.
+// a 4 means a quarter note, 8 an eighteenth , 16 sixteenth, so on
+// !!negative numbers are used to represent dotted notes,
+// so -4 means a dotted quarter note, that is, a quarter plus an eighteenth!!
+int melody[] = {
  
-const byte PIN_LENGTH = 4;    // PIN code is 4 button presses
-char current_pin[PIN_LENGTH] = { '0', '0', '0', '0' }; // Initial PIN is four zeros.
+  // Never Gonna Give You Up - Rick Astley
+  // Score available at https://musescore.com/chlorondria_5/never-gonna-give-you-up_alto-sax
+  // Arranged by Chlorondria
  
-// Define what characters will be returned by each button
-const char BUTTONS[ROWS][COLS] = {
-  { '1', '2', '3', 'A' },
-  { '4', '5', '6', 'B' },
-  { '7', '8', '9', 'C' },
-  { '*', '0', '#', 'D' }
+  NOTE_D5,-4, NOTE_E5,-4, NOTE_A4,4, //1
+  NOTE_E5,-4, NOTE_FS5,-4, NOTE_A5,16, NOTE_G5,16, NOTE_FS5,8,
+  NOTE_D5,-4, NOTE_E5,-4, NOTE_A4,2,
+  NOTE_A4,16, NOTE_A4,16, NOTE_B4,16, NOTE_D5,8, NOTE_D5,16,
+  NOTE_D5,-4, NOTE_E5,-4, NOTE_A4,4, //repeat from 1
+  NOTE_E5,-4, NOTE_FS5,-4, NOTE_A5,16, NOTE_G5,16, NOTE_FS5,8,
+  NOTE_D5,-4, NOTE_E5,-4, NOTE_A4,2,
+  NOTE_A4,16, NOTE_A4,16, NOTE_B4,16, NOTE_D5,8, NOTE_D5,16,
+  REST,4, NOTE_B4,8, NOTE_CS5,8, NOTE_D5,8, NOTE_D5,8, NOTE_E5,8, NOTE_CS5,-8,
+  NOTE_B4,16, NOTE_A4,2, REST,4,
+ 
+  REST,8, NOTE_B4,8, NOTE_B4,8, NOTE_CS5,8, NOTE_D5,8, NOTE_B4,4, NOTE_A4,8, //7
+  NOTE_A5,8, REST,8, NOTE_A5,8, NOTE_E5,-4, REST,4,
+  NOTE_B4,8, NOTE_B4,8, NOTE_CS5,8, NOTE_D5,8, NOTE_B4,8, NOTE_D5,8, NOTE_E5,8, REST,8,
+  REST,8, NOTE_CS5,8, NOTE_B4,8, NOTE_A4,-4, REST,4,
+  REST,8, NOTE_B4,8, NOTE_B4,8, NOTE_CS5,8, NOTE_D5,8, NOTE_B4,8, NOTE_A4,4,
+  NOTE_E5,8, NOTE_E5,8, NOTE_E5,8, NOTE_FS5,8, NOTE_E5,4, REST,4,
+   
+  NOTE_D5,2, NOTE_E5,8, NOTE_FS5,8, NOTE_D5,8, //13
+  NOTE_E5,8, NOTE_E5,8, NOTE_E5,8, NOTE_FS5,8, NOTE_E5,4, NOTE_A4,4,
+  REST,2, NOTE_B4,8, NOTE_CS5,8, NOTE_D5,8, NOTE_B4,8,
+  REST,8, NOTE_E5,8, NOTE_FS5,8, NOTE_E5,-4, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16,
+  NOTE_FS5,-8, NOTE_FS5,-8, NOTE_E5,-4, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16,
+ 
+  NOTE_E5,-8, NOTE_E5,-8, NOTE_D5,-8, NOTE_CS5,16, NOTE_B4,-8, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16, //18
+  NOTE_D5,4, NOTE_E5,8, NOTE_CS5,-8, NOTE_B4,16, NOTE_A4,8, NOTE_A4,8, NOTE_A4,8,
+  NOTE_E5,4, NOTE_D5,2, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16,
+  NOTE_FS5,-8, NOTE_FS5,-8, NOTE_E5,-4, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16,
+  NOTE_A5,4, NOTE_CS5,8, NOTE_D5,-8, NOTE_CS5,16, NOTE_B4,8, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16,
+ 
+  NOTE_D5,4, NOTE_E5,8, NOTE_CS5,-8, NOTE_B4,16, NOTE_A4,4, NOTE_A4,8,  //23
+  NOTE_E5,4, NOTE_D5,2, REST,4,
+  REST,8, NOTE_B4,8, NOTE_D5,8, NOTE_B4,8, NOTE_D5,8, NOTE_E5,4, REST,8,
+  REST,8, NOTE_CS5,8, NOTE_B4,8, NOTE_A4,-4, REST,4,
+  REST,8, NOTE_B4,8, NOTE_B4,8, NOTE_CS5,8, NOTE_D5,8, NOTE_B4,8, NOTE_A4,4,
+  REST,8, NOTE_A5,8, NOTE_A5,8, NOTE_E5,8, NOTE_FS5,8, NOTE_E5,8, NOTE_D5,8,
+ 
+  REST,8, NOTE_A4,8, NOTE_B4,8, NOTE_CS5,8, NOTE_D5,8, NOTE_B4,8, //29
+  REST,8, NOTE_CS5,8, NOTE_B4,8, NOTE_A4,-4, REST,4,
+  NOTE_B4,8, NOTE_B4,8, NOTE_CS5,8, NOTE_D5,8, NOTE_B4,8, NOTE_A4,4, REST,8,
+  REST,8, NOTE_E5,8, NOTE_E5,8, NOTE_FS5,4, NOTE_E5,-4,
+  NOTE_D5,2, NOTE_D5,8, NOTE_E5,8, NOTE_FS5,8, NOTE_E5,4,
+  NOTE_E5,8, NOTE_E5,8, NOTE_FS5,8, NOTE_E5,8, NOTE_A4,8, NOTE_A4,4,
+ 
+  REST,-4, NOTE_A4,8, NOTE_B4,8, NOTE_CS5,8, NOTE_D5,8, NOTE_B4,8, //35
+  REST,8, NOTE_E5,8, NOTE_FS5,8, NOTE_E5,-4, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16,
+  NOTE_FS5,-8, NOTE_FS5,-8, NOTE_E5,-4, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16,
+  NOTE_E5,-8, NOTE_E5,-8, NOTE_D5,-8, NOTE_CS5,16, NOTE_B4,8, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16,
+  NOTE_D5,4, NOTE_E5,8, NOTE_CS5,-8, NOTE_B4,16, NOTE_A4,4, NOTE_A4,8,
+ 
+   NOTE_E5,4, NOTE_D5,2, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16, //40
+  NOTE_FS5,-8, NOTE_FS5,-8, NOTE_E5,-4, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16,
+  NOTE_A5,4, NOTE_CS5,8, NOTE_D5,-8, NOTE_CS5,16, NOTE_B4,8, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16,
+  NOTE_D5,4, NOTE_E5,8, NOTE_CS5,-8, NOTE_B4,16, NOTE_A4,4, NOTE_A4,8,  
+  NOTE_E5,4, NOTE_D5,2, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16,
+   
+  NOTE_FS5,-8, NOTE_FS5,-8, NOTE_E5,-4, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16, //45
+  NOTE_A5,4, NOTE_CS5,8, NOTE_D5,-8, NOTE_CS5,16, NOTE_B4,8, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16,
+  NOTE_D5,4, NOTE_E5,8, NOTE_CS5,-8, NOTE_B4,16, NOTE_A4,4, NOTE_A4,8,  
+  NOTE_E5,4, NOTE_D5,2, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16,
+  NOTE_FS5,-8, NOTE_FS5,-8, NOTE_E5,-4, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16, //45
+ 
+  NOTE_A5,4, NOTE_CS5,8, NOTE_D5,-8, NOTE_CS5,16, NOTE_B4,8, NOTE_A4,16, NOTE_B4,16, NOTE_D5,16, NOTE_B4,16,
+  NOTE_D5,4, NOTE_E5,8, NOTE_CS5,-8, NOTE_B4,16, NOTE_A4,4, NOTE_A4,8,
+ 
+  NOTE_E5,4, NOTE_D5,2, REST,4
 };
  
-// Define row and column pins connected to the keypad
-const byte ROW_PINS[ROWS] = { 5, 4, 3, 2 };
-const byte COL_PINS[COLS] = { 6, 7, 8, 9 };
+// sizeof gives the number of bytes, each int value is composed of two bytes (16 bits)
+// there are two values per note (pitch and duration), so for each note there are four bytes
+int notes = sizeof(melody) / sizeof(melody[0]) / 2;
  
-Keypad heroKeypad = Keypad(makeKeymap(BUTTONS), ROW_PINS, COL_PINS, ROWS, COLS);
+// this calculates the duration of a whole note in ms
+int wholenote = (60000 * 4) / tempo;
  
-const byte BUZZER_PIN = 10;  // pin 10 drives the buzzer
+int divider = 0, noteDuration = 0;
  
 void setup() {
-  pinMode(BUZZER_PIN, OUTPUT);
+  // iterate over the notes of the melody.
+  // Remember, the array is twice the number of notes (notes + durations)
+  for (int thisNote = 0; thisNote < notes * 2; thisNote = thisNote + 2) {
  
-  Serial.begin(9600);  // Begin monitoring via the serial monitor
-  delay(200);          // Delay a brief period to let things settle before displaying prompt.
-  Serial.println("Press * to enter new PIN or # to access the system.");
+    // calculates the duration of each note
+    divider = melody[thisNote + 1];
+    if (divider > 0) {
+      // regular note, just proceed
+      noteDuration = (wholenote) / divider;
+    } else if (divider < 0) {
+      // dotted notes are represented with negative durations!!
+      noteDuration = (wholenote) / abs(divider);
+      noteDuration *= 1.5; // increases the duration in half for dotted notes
+    }
+ 
+    // we only play the note for 90% of the duration, leaving 10% as a pause
+    tone(buzzer, melody[thisNote], noteDuration * 0.9);
+ 
+    // Wait for the specief duration before playing the next note.
+    delay(noteDuration);
+ 
+    // stop the waveform generation before the next note.
+    noTone(buzzer);
+  }
 }
  
 void loop() {
-  char button_character = heroKeypad.waitForKey();
- 
-  // Serial.println(button_character);
-  tone(BUZZER_PIN, 880, 100);
- 
-  if (button_character == '#') {  // button to access system
-    bool access_allowed = validatePIN();
-    if (access_allowed) {
-      Serial.println("Welcome, authorized user. You may now begin using the system.");
-    } else {
-      Serial.println("Access Denied.");
-      Serial.println("\nPress * to enter new PIN or # to access the system.");
-    }
-  }
- 
-  if (button_character == '*') {  // button to change PIN
-    bool access_allowed = validatePIN();
- 
-    if (access_allowed) {
-      Serial.println("Welcome, authorized user. Please Enter a new PIN: ");
- 
-      for (int i = 0; i < PIN_LENGTH; i++) {
-        button_character = heroKeypad.waitForKey();
-        tone(BUZZER_PIN, 880, 100);
- 
-        current_pin[i] = button_character;
-        Serial.print("*");
-      }
- 
-      Serial.println();  // add new line after last asterisk so next message is on next line
-      Serial.println("PIN Successfully Changed!");
-    } else {
-      Serial.println("Access Denied. Cannot change PIN without the old or default.");
-      Serial.println("\nPress * to enter new PIN or # to access the system.");
-    }
-  }
+  // no need to repeat the melody.
 }
- 
-/*
- * This function prompts the user to enter a PIN and returns true or false depending
- * on whether the PIN matches our saved PIN.
- *
- * NOTE: this function introduces the concept of a function that returns a single
- *       value.  First, we must indicate what type of value that will be returned
- *       in the initial function declaration.  The "bool" at the beginning of
- *       the declaration indicates that this function will return a "boolean" value
- *       of either true or false.
- */
- 
-bool validatePIN() {
-  Serial.println("Enter PIN to continue.");
- 
-  for (int i = 0; i < PIN_LENGTH; i++) {
-    char button_character = heroKeypad.waitForKey();
-    tone(BUZZER_PIN, 880, 100);
- 
-    if (current_pin[i] != button_character) {
-      Serial.println();  // start next message on new line
-      Serial.print("WRONG PIN DIGIT: ");
-      Serial.println(button_character);
-      return false;  // return false and exit function
-    }
-    Serial.print("*");
-  }
- 
-  Serial.println();  // add new line after last asterisk so next message is on next line
-  Serial.println("Device Successfully Unlocked!");
-  return true;
-}
- 

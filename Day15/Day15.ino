@@ -1,14 +1,31 @@
 /*
  * 30 Days - Lost in Space
- * Day 16 - A Fancy New Display
+ * Day 14 - Advanced Security Panel
  *
  * Learn more at https://learn.inventr.io/adventure
  *
- * Sound and light gives us some good feedback from our HERO, but what about
- * when we need numbers and the Serial Console isn't available?  Today we
- * introduce a 4-digit 7-segment display (TM1637).  This is mostly for numbers,
- * like a counter or perhaps a clock display, but with some imagination we can
- * also show some characters.
+ * Time to enhance our security system, taking it from functional to fabulous.  We'll
+ * add in our RGB LED to give us visual feedback and also expand the tones that play
+ * to give us audible feedback as you enter your PIN.
+ *
+ * IMPORTANT NOTE: The wiring for this sketch builds on the Day 13 wiring. But the
+ *                 addition of the RGB LED requires us to MOVE some of the Day 13
+ *                 wires.  This is because the RGB LED only works when connected to
+ *                 pins that support Pulse Width Modulation (PWM).  HERO pins that
+ *                 support PWM have a tilde ('~') preceeding their pin numbers.
+ *
+ *                 If you look at the Day 13 diagrams you see that we used PWM pins
+ *                 for the keypad and buzzer, leaving only one available.  Pins 12
+ *                 and 13 are still available so we'll move the wires on pins 9 and 10
+ *                 (PWM pins) to 12 and 13.
+ *
+ *                 Pin 13 is also used while the Arduino IDE is uploading sketches, and
+ *                 if you connect the buzzer to THAT pin you get noise every time you
+ *                 upload a new sketch (try it!).  So the buzzer will now be on pin 12
+ *                 and the keypad wire on pin 9 will move to pin 13.
+ *
+ *                 Because we used constants, we only need to make two small changes
+ *                 from the Day 13 sketch instead of hunting down and changing each use.
  *
  * Alex Eschenauer
  * David Schmidt
@@ -17,146 +34,189 @@
  
 /*
  * Arduino concepts introduced/documented in this lesson.
- * - Binary notation (0b00000001)
- * - logical OR
- * -
+ * - complex logic with multiple devices
  *
  * Parts and electronics concepts introduced in this lesson.
- * - TM1637 4-digit 7-segment display
+ * - Changing wiring when particular pins (PWM) are required for added components.
+ * - Tone() and PWM analogWrite() cannot both operate at the same time.
  */
  
 // Explicitly include Arduino.h
 #include "Arduino.h"
  
-/*
- * Please refer to the lesson and lesson videos for instructions on how to
- * load the TM1637 library into your Arduino IDE before you use it for the
- * first time.
- *
- * In order to use the TM1637 library we include the file "TM1637Display.h".
- */
-#include <TM1637Display.h>
+// Include Keypad library
+#include <Keypad.h>
  
-// all_on pins connected to the TM1637 display
-const byte CLK_PIN = 6;
-const byte DIO_PIN = 5;
+// Our HERO keypad has 4 rows, each with 4 columns.
+const byte ROWS = 4;
+const byte COLS = 4;
  
-// Create display object of type TM1637Display:
-TM1637Display lander_display = TM1637Display(CLK_PIN, DIO_PIN);
+const byte PIN_LENGTH = 4;                           // PIN code is 4 button presses
+char password[PIN_LENGTH] = { '0', '0', '0', '0' };  // Initial password is four zeros.
  
-/*
- * The TM1637 library takes an array of 4 bytes to represent each of the 4 display
- * digits.  Within each byte, bit 0 is segment A, bit 1 is segment B etc.  A zero
- * indicates the segment is off, a 1 bit indicates the segment is on.
- *
- * NOTE: To show the individual bits in each byte we will use BINARY number notation
- *       consisting of a "0b" followed by eight bits that can be either 0 or 1 (ex.
- *       0b01010101).
- */
- 
-// Create array that turns all segments on:
-const byte all_on[] = { 0b11111111,
-                        0b11111111,
-                        0b11111111,
-                        0b11111111 };
- 
-/*
- * A 7-segment display is shaped like an "8" and has 7 segments (A through G) that can be
- * lit up. The diagram below shows the placement of each of the segments.
- *
- *   A
- * F   B
- *   G
- * E   C
- *   D
- *
- * You can set the individual segments per digit to spell words or create other symbols.
- * The TM1637 library provides constants for each segment on the display.  If you hover
- * your mouse over each of these constants you can see that each defines a byte with only
- * one bit set to 1.  SEG_A = 0b00000001, SEG_B = 0b00000010, etc.
- *
- * The Arduino C++ language uses the '|' operator to do a "bitwise or" between values.  It
- * takes each corresponding bits in two values and the output is 1 if *either* or both of the
- * corresponding bits is 1.  If both corresponding bits are 0 then the corresponding bit is
- * set to 0.
- *
- * In other words:
- * 0  0  1  1    operand1
- * 0  1  0  1    operand2
- * ----------
- * 0  1  1  1    (operand1 | operand2) - returned result
- */
- 
- // By turning on selected segments we can display *some* alphabetic characters.
- // Here we spell out the word "dOnE".
-const byte done[] = {
-  SEG_B | SEG_C | SEG_D | SEG_E | SEG_G,          // d
-  SEG_A | SEG_B | SEG_C | SEG_D | SEG_E | SEG_F,  // O
-  SEG_C | SEG_E | SEG_G,                          // n
-  SEG_A | SEG_D | SEG_E | SEG_F | SEG_G           // E
+// Define what characters will be returned by each button
+// const char BUTTONS[ROWS][COLS] = {
+//   { '1', '2', '3', 'A' },
+//   { '4', '5', '6', 'B' },
+//   { '7', '8', '9', 'C' },
+//   { '*', '0', '#', 'D' }
+// };
+const char BUTTONS[ROWS][COLS] = {
+  { 'A', 'B', 'C', 'D' },
+  { '3', '6', '9', '#' },
+  { '2', '5', '8', '0' },
+  { '1', '4', '7', '*' }
 };
+// Define row and column pins connected to the keypad
+const byte ROW_PINS[ROWS] = { 5, 4, 3, 2 };
+const byte COL_PINS[COLS] = { 6, 7, 8, 13 };  // NOTE wire moved from Day 13's sketch to pin 13
+ 
+// Create our keypad object from the keypad configuration above
+Keypad heroKeypad = Keypad(makeKeymap(BUTTONS), ROW_PINS, COL_PINS, ROWS, COLS);
+ 
+const byte BUZZER_PIN = 12;  // NOTE that pin 12 drives the buzzer now
+ 
+const byte RED_PIN = 11;    // PWM pin controlling the red leg of our RGB LED
+const byte GREEN_PIN = 10;  // PWM pin ccontrolling the green leg of our RGB LED
+const byte BLUE_PIN = 9;    // PWM pin ccontrolling the blue leg of our RGB LED
  
 void setup() {
-  lander_display.setBrightness(7);  // Configure the display brightness (0-7):
+  pinMode(RED_PIN, OUTPUT);
+  pinMode(GREEN_PIN, OUTPUT);
+  pinMode(BLUE_PIN, OUTPUT);
+ 
+  // Since we start out "locked", we initially display a red color.
+  displayColor(128, 0, 0);
+ 
+  Serial.begin(9600);  // Begin monitoring via the serial monitor
+  Serial.println("Press * to set new password or # to access the system.");
 }
  
 void loop() {
-  // Clear the display (all segments off)
-  lander_display.clear();
-  delay(1000);
+  char button_character = heroKeypad.getKey();  // Wait for a button press and save character
  
-  // Light up all segments of the display
-  lander_display.setSegments(all_on);
-  delay(1000);
+  // The '#' button unlocks our console
+  if (button_character == '#') {          // Button to access system
+    giveInputFeedback();                  // Short beep with blue light
+    bool access_allowed = validatePIN();  // Have user enter PIN to allow access
  
-  // Clear the display (all segments off)
-  lander_display.clear();
-  delay(1000);
- 
-  /*
-   *
-   * Microwave after a power outage
-   * Blinking 12:00.  The .showNumberDecEx() function has an additional parameter to turn
-   * on the ':' after the 2nd digit.  This works well for time displays.
-   *
-   * The second parameter can also be used to control dots between digits if the
-   * display has them.  In our case, the HERO display only has the colon.
-   *
-   * Dot/Colon enable. The argument is a bitmask, with each bit corresponding to a dot
-   *        between the digits (or colon mark, as implemented by each module). i.e.
-   *        For displays with dots between each digit:
-   *        * 0.000 (0b10000000)
-   *        * 00.00 (0b01000000)
-   *        * 000.0 (0b00100000)
-   *        * 0.0.0.0 (0b11100000)
-   *        For displays with just a colon:     <== This is true for the HERO display
-   *        * 00:00 (0b01000000)
-   *        For displays with dots and colons colon:
-   *        * 0.0:0.0 (0b11100000)
-   */
-  for (int i = 0; i < 4; i++) {
-    lander_display.showNumberDecEx(1200, 0b01000000);
-    delay(500);
-    lander_display.clear();
-    delay(500);
+    if (access_allowed) {
+      Serial.println("Welcome, authorized user. You may now begin using the system.");
+    } else {
+      Serial.println("Access Denied.");
+      Serial.println("\nPress * to enter new PIN or # to access the system.");
+    }
   }
  
-  // Show counter including negative sign for negative numbers
-  // NOTE: negative numbers cannot be less than -999 since the negative sign
-  //       uses the left most digit of the display.
-  for (int i = -100; i <= 100; i++) {
-    lander_display.showNumberDec(i);
-    delay(50);
+  // The '*' allows the user to enter a new PIN after entering current PIN for security
+  if (button_character == '*') {          // Button to change password
+    giveInputFeedback();                  // Short beep with blue light
+    bool access_allowed = validatePIN();  // Have user enter PIN to allow access
+ 
+    if (access_allowed) {
+      displayColor(128, 80, 0);  // Display yellow LED while entering a NEW PIN
+      Serial.println("Welcome, authorized user. Please Enter a new password: ");
+ 
+      // Use a for() loop that runs once for each PIN character.  Each character read
+      // replaces a character in our original PIN.
+      for (int i = 0; i < PIN_LENGTH; i++) {
+        password[i] = heroKeypad.waitForKey();  // replace PIN character with new character
+        // NOTE: After the LAST button press we will give Success feedback, but up to the
+        //       last character we simply give input feedback.  Since Array indices start
+        //       at 0, this if() statement will be true for all but the LAST character of
+        //       the new PIN.
+        if (i < (PIN_LENGTH - 1)) {
+          giveInputFeedback();
+          displayColor(128, 80, 0);  // override color
+        }
+ 
+        Serial.print("*");
+      }
+ 
+      Serial.println();  // add new line after last asterisk so next message is on next line
+      Serial.println("PIN Successfully Changed!");
+      giveSuccessFeedback();  // TADA sound and green light for successful PIN change
+    } else {
+      Serial.println("Access Denied. Cannot change PIN without entering current PIN first.");
+      Serial.println("\nPress * to enter new PIN or # to access the system.");
+    }
   }
-  delay(1000);
- 
-  // Clear the display (all segments off)
-  lander_display.clear();
-  delay(1000);
- 
-  // Display the message "dOnE"
-  lander_display.setSegments(done);
- 
-  delay(10000);  // Delay 10 seconds and then repeat our demo.
 }
  
+// Enter PIN and return false for bad PIN or true for good PIN
+bool validatePIN() {
+  bool valid = true;
+  Serial.println("Enter PIN to continue.");
+ 
+  for (int i = 0; i < PIN_LENGTH; i++) {
+    char button_character = heroKeypad.waitForKey();
+ 
+    if (password[i] != button_character) {
+      valid = false;
+    }
+    // Give normal input feedback for all but the LAST character
+    if (i < (PIN_LENGTH - 1)) {
+      giveInputFeedback();  // Short beep and blue LED
+    }
+    Serial.print("*");
+  }
+ 
+  if (!valid) {
+    giveErrorFeedback();  // Error sound and red light
+    Serial.println();     // start next message on new line
+    Serial.println("WRONG PIN: ");
+    //Serial.println(button_character);
+  } else if (valid) {
+  giveSuccessFeedback();  // PIN matched - TADA! sound with green LED
+  Serial.println();       // add new line after last asterisk so next message is on next line
+  Serial.println("Device Successfully Unlocked!");
+  }
+
+  return valid;
+}
+ 
+// Display a color by providing Red, Green and Blue intensities (0-255)
+void displayColor(byte red_intensity, byte green_intensity, byte blue_intensity) {
+  analogWrite(RED_PIN, red_intensity);      // Set red LED intensity using PWM
+  analogWrite(GREEN_PIN, green_intensity);  // Set green LED intensity using PWM
+  analogWrite(BLUE_PIN, blue_intensity);    // Set blue LED intensity using PWM
+}
+ 
+/*
+ * NOTE:
+ * Both the PWM functions and tone() functions use some of the same HERO hardware
+ * for their functions.  If the RGB LED is on while a tone is played it will flicker
+ * or diplay other colors.  Because of this, we turn off the LED while a tone is
+ * being played and restore it immediately afterwards.
+ */
+ 
+// A recognized button was pressed.  Give short beep and blue LED
+void giveInputFeedback() {
+  displayColor(0, 0, 0);  // Turn off LED while playing tone
+  tone(BUZZER_PIN, 880, 200);
+  delay(200);               // Delay while tone is playing because tone() returns immediately
+  displayColor(0, 0, 128);  // Restore blue LED
+}
+ 
+// A matching PIN has been entered or a new PIN has been accepted.
+// Play TADA! sound and display green LED
+void giveSuccessFeedback() {
+  displayColor(0, 0, 0);  // Turn off LED while playing tone
+  tone(BUZZER_PIN, 300, 200);
+  delay(200);  // Delay while tone is playing because tone() returns immediately
+ 
+  tone(BUZZER_PIN, 500, 500);
+  delay(500);  // Delay while tone is playing because tone() returns immediately
+  displayColor(0, 128, 0); // Display green LED
+}
+ 
+// Bad PIN entered.  Play descending tone and display red LED
+void giveErrorFeedback() {
+  displayColor(0, 0, 0);  // Turn off LED while playing tone
+  tone(BUZZER_PIN, 300, 200);
+  delay(200);  // Delay while tone is playing because tone() returns immediately
+ 
+  tone(BUZZER_PIN, 200, 500);  // Frequency = 200Hz, Duration = 200ms
+  delay(500);  // Delay while tone is playing because tone() returns immediately
+  displayColor(128, 0, 0);  // Display red LED
+}
