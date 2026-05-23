@@ -62,8 +62,12 @@ void loop() {
   // Use static because we need this variable to maintain it's value across
   // multiple loop() runs.
   static unsigned long battery_level = 0;  // Current battery charge level (set to 0 first time used)
+  static long photoLevel = 0;
  
-  battery_level += analogRead(PHOTORESISTOR_PIN);  // Add current "charge amount" to our battery
+   photoLevel = analogRead(PHOTORESISTOR_PIN);  // Add current "charge amount" to our battery
+   Serial.print("Photo reading: ");
+   Serial.println(photoLevel);
+   battery_level += photoLevel;
  
  if (battery_level > 100) {  // Adding a battery drain
     battery_level -= 100;

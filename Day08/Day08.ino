@@ -1,12 +1,14 @@
 /*
  * 30 Days - Lost in Space
- * Day 9 - A Better Way to Do Things
+ * Day 8 - Adding some color to this dark place
  *
  * Learn more at https://learn.inventr.io/adventure
  *
- * Now that we know how to measure our battery charging rate and we know how to display
- * multiple colors with the RGB LED, let's combine those two concepts to display different
- * colors as our battery charges to give a good indication of our current battery state.
+ * Previously we have used different color LEDs with our HERO, but when we require
+ * more output, or desire a color different from the available colors we use a more
+ * flexible "RGB LED".  RGB LEDs have a red, a green and a blue LED packaged into a
+ * single LED package.  By using something called Pulse Width Modulation (PWM) we
+ * can vary the intensity of each LED and come up a wide variety of colors.
  *
  * Alex Eschenauer
  * David Schmidt
@@ -15,96 +17,105 @@
  
 /*
  * Arduino concepts introduced/documented in this lesson.
- * - float:   Variable type for decimal numbers that include a decimal point
- * - else if: Control structure for making multiple if decisions together
+ * - analogWrite(): Used to control a PWM pin, giving a variable intensity
+ * - Passing variables into functions
  *
  * Parts and electronics concepts introduced in this lesson.
+ * - Common Cathode (single grounded pin) RGB LED.
  */
  
 // Explicitly include Arduino.h
 #include "Arduino.h"
  
-// Our photoresistor will give us a reading of the current light level on this analog pin
-const byte PHOTORESISTOR_PIN = A0;  // Photoresistor analog pin
- 
-// RGB LED pins
-const byte RED_PIN = 11;    // pin controlling the red leg of our RGB LED
-const byte GREEN_PIN = 10;  // pin ccontrolling the green leg of our RGB LED
-const byte BLUE_PIN = 9;    // pin ccontrolling the blue leg of our RGB LED
- 
-const unsigned long BATTERY_CAPACITY = 50000;  // Maximum battery capacity
+/*
+ * Each color in an RGB LED is controlled with a different pin on our HERO board.
+ *
+ * NOTE: Only pins 3, 5, 6, 9, 10 and 11 on the HERO board support PWM which is
+ *       indicated on the board by preceding those pin numbers on the HERO board
+ *       with a tilde ('~') character.  Only those pins support PWM and analogWrite().
+ */
+const byte RED_PIN = 11;    // PWM pin controlling the red leg of our RGB LED
+const byte GREEN_PIN = 10;  // PWM pin ccontrolling the green leg of our RGB LED
+const byte BLUE_PIN = 9;    // PWM pin ccontrolling the blue leg of our RGB LED
  
 /*
- * Display a color on our RGB LED by providing an intensity for
- * our red, green and blue LEDs.
+ * Define a set of constants to represent 4 different brightness levels for our
+ * RGB LED using PWM pins and analogWrite().  PWM can set values ranging from 0
+ * to 255 which we will demonstrate by adding 64 (roughly 1/4 of that range) to
+ * each preceding value.
+ *
+ * NOTE: this also demonstrates that our constants can be computed using an expression
+ *       that includes any previouly defined constant.  However, the expression cannot
+ *       include variables or values that could change during execution.
+ */
+const byte OFF = 0;                 // Selected color is OFF
+const byte DIM = 64;                // Selected color is 1/4 intensity
+const byte BRIGHTER = DIM + 64;     // Selected color is 1/2 intensity
+const byte BRIGHT = BRIGHTER + 64;  // Selected color is 3/4 intensity
+const byte BRIGHTEST = 255;         // Selected color is maximum intensity (255)
+ 
+// We can change this constant here, in one place, to change how long each color is displayed.
+const unsigned int COLOR_DELAY = 500;  // show each color for 500 milliseconds
+ 
+void setup() {
+  // Set each of our PWM pins as OUTPUT pins
+  pinMode(RED_PIN, OUTPUT);
+  pinMode(GREEN_PIN, OUTPUT);
+  pinMode(BLUE_PIN, OUTPUT);
+}
+ 
+// Each time through loop() we display some of the color variations available
+// using an RGB LED.
+void loop() {
+  // First demonstrate our different PWM levels by slowly brightening our red LED
+  displayColor(OFF, OFF, OFF);  // OFF!
+  delay(COLOR_DELAY);
+  displayColor(DIM, OFF, OFF);  // Display red LED at 1/4 intensity
+  delay(COLOR_DELAY);
+  displayColor(BRIGHTER, OFF, OFF);  // Display red LED at 1/2 intensity
+  delay(COLOR_DELAY);
+  displayColor(BRIGHT, OFF, OFF);  // Display red LED at 3/4 intensity
+  delay(COLOR_DELAY);
+  displayColor(BRIGHTEST, OFF, OFF);  // Display red LED at FULL intensity
+  delay(COLOR_DELAY);
+ 
+  // Display our other two LED colors at half intensity
+  displayColor(OFF, BRIGHT, OFF);  // Display the green LED
+  delay(COLOR_DELAY);
+  displayColor(OFF, OFF, BRIGHT);  // Display the blue LED
+  delay(COLOR_DELAY);
+ 
+  // Now show various colors (at half intensity) by mixing our three colors
+  displayColor(BRIGHT, BRIGHT, OFF);  // Display yellow by mixing red and green LEDs
+  delay(COLOR_DELAY);
+  displayColor(OFF, BRIGHT, BRIGHT);  // Display cyan by mixing green and blue LEDs
+  delay(COLOR_DELAY);
+  displayColor(BRIGHT, OFF, BRIGHT);  // Display magenta by mixing red and blue LEDs
+  delay(COLOR_DELAY);
+ 
+  // Display all of our LEDs to get white.
+  displayColor(BRIGHT, BRIGHT, BRIGHT);  // white
+  delay(COLOR_DELAY);
+}
+ 
+/*
+ * displayColor() is a function that accepts three parameters representing the desired
+ * intensity for each of the LEDs in the RGB LED.
+ *
+ * Each parameter passed must have a type (here we match what analogWrite() will use) and
+ * a name to be used inside the function to refer to the parameter.  The parameters can all
+ * be included on a single line like:
+ * void displayColor( byte red_intensity, byte green_intensity, byte blue_intensity) {
+ *
+ * However, if we display each parameter on it's own line we can add a comment to each
+ * for additional clarity.
  */
 void displayColor(
   byte red_intensity,    // red LED intensity (0-255)
   byte green_intensity,  // green LED intensity (0-255)
   byte blue_intensity    // blue LED intensity (0-255)
 ) {
-  analogWrite(RED_PIN, red_intensity);      // write red LED intensity using PWM
-  analogWrite(GREEN_PIN, green_intensity);  // write green LED intensity using PWM
-  analogWrite(BLUE_PIN, blue_intensity);    // write blue LED intensity using PWM
+  analogWrite(RED_PIN, red_intensity);      // Set red LED intensity using PWM
+  analogWrite(GREEN_PIN, green_intensity);  // Set green LED intensity using PWM
+  analogWrite(BLUE_PIN, blue_intensity);    // Set blue LED intensity using PWM
 }
- 
-void setup() {
-  // Declare the RGB LED pins as outputs:
-  pinMode(RED_PIN, OUTPUT);
-  pinMode(GREEN_PIN, OUTPUT);
-  pinMode(BLUE_PIN, OUTPUT);
- 
-  // Start serial monitor
-  Serial.begin(9600);
-}
- 
-void loop() {
-  // Use static because we need this variable to maintain it's value across
-  // multiple loop() runs.
-  static unsigned long battery_level = 0;  // Current battery charge level (set to 0 first time used)
- 
-  battery_level += analogRead(PHOTORESISTOR_PIN);  // Add current "charge amount" to our battery
- 
-  // We can't charge the battery higher than it's capacity, set level as full if it goes over
-  if (battery_level > BATTERY_CAPACITY) {
-    battery_level = BATTERY_CAPACITY;
-  }
- 
-  /*
-   * IMPORTANT NOTE:
-   * If you perform an operation using integer arithemetic each value is not
-   * automatically converted to a floating point (decimal) number.
-   *
-   * In the calculation below, if we divide the integer battery value by the
-   * integer battery capacity (battery_level / BATTERY_CAPACITY) then the result
-   * would ALWAYS be 0, even if that 0 gets converted afterwards to a float (0.0).
-   *
-   * To avoid this, we use the "(float)" declaration before each of our values to
-   * instruct the compiler to FIRST convert the value to floating point and then
-   * perform the calculation using floating point math.
-   *
-   * If our current_battery_level is less than the battery capacity the initial
-   * calculation gives us a number from 0.0 to 1.0.  We then multiple by 100 to
-   * get a percentage value from 0.0 up to 100.0.
-   */
- 
-  // Compute battery charge percentage from our function
-  float percentage = ((float)battery_level / (float)BATTERY_CAPACITY) * 100;
- 
-  if (percentage >= 50.0) {     // battery level is OK, display green
-    displayColor(0, 128, 0);  // display green
-  } else if (percentage >= 25.0 && percentage < 50.0) {
-    displayColor(128, 80, 0);  // display yellow-ish/amber for early warning
-  } else {                     // Level must be less than 25%, display "pulsating" red
-    // To pulsate the red light we briefly turn the LED off and then display red, giving it
-    // a pulsating effect.
-    displayColor(0, 0, 0);    // Turn off our LED
-    delay(20);                // ...and delay briefly
-    displayColor(128, 0, 0);  // then display red
-  }
-  Serial.print(percentage);  // Display our floating point percentage (like 12.34) WITHOUT a newline
-  Serial.println("%");       // then display the percent sign ("%") with a newline.
- 
-  delay(100);  // Delay 1/10 of a second so displayed values don't scroll too fast
-}
- 

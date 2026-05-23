@@ -220,4 +220,3 @@ void giveErrorFeedback() {
   delay(500);  // Delay while tone is playing because tone() returns immediately
   displayColor(128, 0, 0);  // Display red LED
 }
- 
