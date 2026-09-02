@@ -25,8 +25,8 @@
 #include <TM1637Display.h>
 
 // Module connection pins (Digital Pins)
-const byte CLK_PIN = 6;
-const byte DIO_PIN = 5;
+const byte CLK_PIN = 5;
+const byte DIO_PIN = 4;
 
 // Amount of time (in ms) to delay between our deciphered key values
 const unsigned int DISPLAY_DELAY = 2000;
