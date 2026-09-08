@@ -1,5 +1,11 @@
+// Explicitly include Arduino.h
+#include "Arduino.h"
+
 //Goal: recreate day 15 project using rotary encoder in the place of the keypad
 #include <TM1637Display.h>
+
+//include EncoderButton.h
+#include <EncoderButton.h>
 
 // Define the display connection pins:
 #define CLK 7
@@ -10,6 +16,8 @@
 #define DT2 4
 // Switch Input
 #define SW2 2
+
+EncoderButton eb1(CLK2, DT2, SW2);
 
 //light sensor range is 0 - 671
 int sensorPin = A0; //select the *analog zero* input pin for probing the photoresistor 
@@ -147,8 +155,12 @@ void setup() {
   // Call Interrupt Service Routine (ISR) updateEncoder() when any high/low change
   // is seen on A (CLK2) interrupt  (pin 2), or B (DT2) interrupt (pin 3)
   //hardware interrupts are only available on pins 2 and 3
-  attachInterrupt(digitalPinToInterrupt(CLK2), updateEncoder, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(SW2), record, CHANGE);
+  //attachInterrupt(digitalPinToInterrupt(CLK2), updateEncoder, CHANGE);
+  //attachInterrupt(digitalPinToInterrupt(SW2), record, CHANGE);
+  //Handler functions for new encoder library
+  eb1.setEncoderHandler(updateEncoder);
+  eb1.setReleasedHandler (record);
+  eb1.useQuadPrecision(false);
 
   RGB_color(125, 125, 125);  //set LED to white on startup...
   delay(1000);
@@ -180,6 +192,7 @@ void passwordChange() {
   while (result == 'C'){
     OurDisplay.showNumberDec(pw1,true,length,0);
     delay(10);
+    eb1.update();
 
     if (access == 1){
       //password entered correctly, start new loop
@@ -197,6 +210,7 @@ void passwordChange() {
     //might need more interupt code 
     OurDisplay.showNumberDec(pw1,true,length,0);
     delay(10);
+    eb1.update();
     if (length > 4){
       password = pw1;
       Serial.print("Password reset: ");
@@ -206,6 +220,7 @@ void passwordChange() {
   }
   OurDisplay.clear();
   showMenu();
+  //Serial.println("showMenu #1");
   //Serial.println("Change Password");
   access = 1;
   result = 'X';
@@ -248,6 +263,7 @@ void menuOptA(){
     delay(10);
     noTone(buzzer);
     delay(10);
+    eb1.update();
   }
   return(0);
 }
@@ -291,6 +307,7 @@ void menuOptB(){
     //Option 2: all white light
     RGB_color(lightLevel, lightLevel, lightLevel);
 
+    eb1.update();
   }
   RGB_color(0,0,0);
   return(0);
@@ -301,6 +318,7 @@ void loop() {
  if (access <= 0){
   OurDisplay.showNumberDec(pw1,true,length,0);
   delay(10);
+  eb1.update();
  }
   //debuging readout 
     // Serial.print("pw1: ");
@@ -314,17 +332,19 @@ void loop() {
     // Serial.print("  access: ");
     // Serial.println(access);
 
-  if (access == 1){
-    //Serial.println("You have entered the menu");
-    showMenu();
-    //Serial.println("In Loop, Access == 1");
-  }
+  // if (access == 1){
+  //   //Serial.println("You have entered the menu");
+  //   showMenu();
+  //   Serial.println("showMenu #2");
+  //   //Serial.println("In Loop, Access == 1");
+  // }
 
   while (access == 1) {           // enter menu mode
     //result = securityPad.getKey(); 
     //Serial.println("In the menu loop"); 
     delay(1);
-    
+    eb1.update();
+   
     //while(!(result = securityPad.getKey())) {
          // wait indefinitely for keypad input of any kind
        //}
@@ -355,15 +375,15 @@ void loop() {
 //  This is our ISR which has the job of responding to interrupt events
 void updateEncoder(){
   // Read the current state of CLK
-  currentStateCLK = digitalRead(CLK2);
-
+  //currentStateCLK = digitalRead(CLK2);
+  
   if (access == 0 || access == 3) {  //actions while validating password
     // If last and current state of CLK are different, then a pulse occurred;
     // React to only 0->1 state change to avoid double counting
-    if (currentStateCLK != lastStateCLK  && currentStateCLK == 1){
+    //if (eb1.increment() == 1){
       // If the DT state is different than the CLK state then
       // the encoder is rotating CW so INCREASE counter by 1
-      if (digitalRead(DT2) == currentStateCLK) {
+      if (eb1.increment() == 1) {
         if((pw1 - (pw2 * multiplier)) == 9){
           pw1 = pw2 * multiplier;
         }
@@ -379,14 +399,14 @@ void updateEncoder(){
           pw1 --;
         }
       }
-    }
+    //}
     // Remember last CLK state to use on next interrupt...
-    lastStateCLK = currentStateCLK;
+    //lastStateCLK = currentStateCLK;
   }
   if (access == 1) {   //actions after password has been validated and system access has been granted
     //Serial.println("Here you need to code to scroll through the menu options");
-    if (currentStateCLK != lastStateCLK  && currentStateCLK == 1){
-      if (digitalRead(DT2) == currentStateCLK) {
+    //if (currentStateCLK != lastStateCLK  && currentStateCLK == 1){
+      if (eb1.increment() == 1) {
         switch (menuOption) {
           case 'A':
             menuOption = 'B';
@@ -426,7 +446,7 @@ void updateEncoder(){
             break;
         }
       }
-    }
+    //}
     // Serial.print("Direction: ");
     // Serial.print(currentDir);
     // Serial.print(" | Counter= ");
@@ -447,7 +467,7 @@ void record(){
   //Serial.println(digitalRead(SW2));
 
   if (access <= 0)  {   //actions while validating password
-    if (digitalRead(SW2) == HIGH){
+    //if (digitalRead(SW2) == HIGH){
       //Serial.println("in loop");
       pw2 = pw1;
       //multiplier = multiplier * 10;
@@ -460,6 +480,7 @@ void record(){
           OurDisplay.clear();
           if (result == 'X'){
             showMenu();
+            //Serial.println("showMenu #3");
             //Serial.println("In record, password verified, result == X");
           }
           return(0);
@@ -495,10 +516,10 @@ void record(){
       // Serial.print(password);
       // Serial.print("  multiplier: ");
       // Serial.println(multiplier);
-    }
+    //}
   }
   
-  if (access == 1 && digitalRead(SW2) == HIGH){  //while in the main menu
+  if (access == 1 /*&& digitalRead(SW2) == HIGH*/){  //while in the main menu
     // Serial.print("MenuOption: ");
     // Serial.println(menuOption);
     //Serial.println("Add select a menu option");
@@ -539,15 +560,16 @@ void record(){
         break;
     }
   }
-  if (access == 2 && digitalRead(SW2) == HIGH){  //while you are inside of a menu option
+  if (access == 2 /*&& digitalRead(SW2) == HIGH*/){  //while you are inside of a menu option
     //Serial.println("Add return to the menu state");
     access = 1;
     result = 'Y';
     delay(10);
     showMenu();
+    //Serial.println("showMenu #4");
     //Serial.println("exit menu A or B, Access was 2, now == 1");
   }
-  if (access == 3 && digitalRead(SW2) == HIGH){  //switch operation while resetting password
+  if (access == 3 /*&& digitalRead(SW2) == HIGH*/){  //switch operation while resetting password
     length ++;
     if (length < 5){
     pw2 = pw1;
