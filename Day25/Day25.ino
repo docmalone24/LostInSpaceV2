@@ -1,6 +1,7 @@
-#include <U8glib.h>
+#include <U8g2lib.h>  // Include file for the U8g2 library.
+#include "Wire.h"     // Sometimes required for I2C communications.
  
-U8GLIB_SH1106_128X64  My_u8g_Panel(U8G_I2C_OPT_NONE); // I2C / TWI
+U8G2_SH1106_128X64_NONAME_2_HW_I2C lander_display(U8G2_R0, /* reset=*/U8X8_PIN_NONE);
 
 // Rotary Encoder Inputs
 #define CLK2 3
@@ -11,8 +12,8 @@ U8GLIB_SH1106_128X64  My_u8g_Panel(U8G_I2C_OPT_NONE); // I2C / TWI
 //light sensor range is 0 - 671
 int sensorPin = A1; //select the *analog zero* input pin for probing the photoresistor 
 int senMax = 680; //maximum light value received by the sensor
-int buzzer = 8;  //sound output pin
-int redPin = 11;   //  PWM color output pins
+//int buzzer = 6;  //sound output pin, needs to be in a PWM
+int redPin = 5;   //  PWM color output pins, 11 conflicts with tone()
 int greenPin = 10;
 int bluePin = 9;
 
@@ -36,15 +37,24 @@ void setup() {
   // Setup Serial Monitor
   Serial.begin(9600);
   // flip screen, if required
-  // My_u8g_Panel.setRot180();
+  // lander_display.setRot180();
  
-  // assign default color value
-  My_u8g_Panel.setColorIndex(1); // pixel on
+  // Configure OLED display
+  lander_display.begin();                     // Initialize OLED display
+  lander_display.setFont(u8g2_font_6x10_tr);  // Set text font
+  lander_display.setFontRefHeightText();      // Define how max text height is calculated
+  lander_display.setFontPosTop();             // Y coordinate for text is at top of tallest character
 
   // Set encoder pins as inputs
   pinMode(CLK2,INPUT);
   pinMode(DT2,INPUT);
   pinMode(SW2,INPUT_PULLUP);
+
+  //pinMode(buzzer, OUTPUT);
+
+  pinMode(redPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
 
     // Read the initial state of A (CLK)
   lastStateCLK = digitalRead(CLK2);
@@ -56,10 +66,10 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(SW2), record, CHANGE);
 
 /*/ picture loop  
-  My_u8g_Panel.firstPage();  
+  lander_display.firstPage();  
   do {
     passwordHeader();
-  } while( My_u8g_Panel.nextPage() );*/
+  } while( lander_display.nextPage() );*/
 }
 
 //  custom function to light the LED *******************************
@@ -71,11 +81,12 @@ void RGB_color(int red_value, int green_value, int blue_value){
 
 void playSuccess() {
   RGB_color(0, 125, 0); // LED to GREEN
-  tone(buzzer, 1000, 200);
+  //tone(buzzer, 1000);
   delay(200);
-  tone(buzzer, 2700, 1000);
+  //noTone(buzzer);
+  //tone(buzzer, 2700);
   delay(1000);
-  noTone(buzzer);
+  //noTone(buzzer);
   delay(1000);
   RGB_color(0, 0, 0);
 }
@@ -100,9 +111,9 @@ void menuOptA(){
     Serial.print(senPercent);
     Serial.print("  Access: ");
     Serial.println(access);
-    tone(buzzer, buzzTone, 100);
+    //tone(buzzer, buzzTone);
     delay(10);
-    noTone(buzzer);
+    //noTone(buzzer);
     interrupts();
     delay(10);
   }
@@ -157,64 +168,64 @@ void menuOptB(){
 
 void showMenu(){
   if (menuOption == 'A'){
-  My_u8g_Panel.setFont(u8g_font_unifont); //16 characters per line
-  My_u8g_Panel.drawStr( 0, 10, "Enter an option:");
-  My_u8g_Panel.drawBox(0,11,120,12);
-  My_u8g_Panel.setColorIndex(0);
-  My_u8g_Panel.drawStr( 0, 22, "A:Sound Pitch");
-  My_u8g_Panel.setColorIndex(1);
-  My_u8g_Panel.drawStr( 0, 34, "B:Light");
-  My_u8g_Panel.drawStr( 0, 46, "C:New Password");
-  My_u8g_Panel.drawStr( 0, 58, "E:Exit");
+  //lander_display.setFont(u8g_font_unifont); //16 characters per line
+  lander_display.drawStr( 0, 10, "Enter an option:");
+  lander_display.drawBox(0,11,120,12);
+  lander_display.setColorIndex(0);
+  lander_display.drawStr( 0, 22, "A:Sound Pitch");
+  lander_display.setColorIndex(1);
+  lander_display.drawStr( 0, 34, "B:Light");
+  lander_display.drawStr( 0, 46, "C:New Password");
+  lander_display.drawStr( 0, 58, "E:Exit");
   }
   if (menuOption == 'B'){
-  My_u8g_Panel.setFont(u8g_font_unifont); //16 characters per line
-  My_u8g_Panel.drawStr( 0, 10, "Enter an option:");
-  My_u8g_Panel.drawStr( 0, 22, "A:Sound Pitch");
-  My_u8g_Panel.drawBox(0,23,120,12);
-  My_u8g_Panel.setColorIndex(0);
-  My_u8g_Panel.drawStr( 0, 34, "B:Light");
-  My_u8g_Panel.setColorIndex(1);
-  My_u8g_Panel.drawStr( 0, 46, "C:New Password");
-  My_u8g_Panel.drawStr( 0, 58, "E:Exit");
+  //lander_display.setFont(u8g_font_unifont); //16 characters per line
+  lander_display.drawStr( 0, 10, "Enter an option:");
+  lander_display.drawStr( 0, 22, "A:Sound Pitch");
+  lander_display.drawBox(0,23,120,12);
+  lander_display.setColorIndex(0);
+  lander_display.drawStr( 0, 34, "B:Light");
+  lander_display.setColorIndex(1);
+  lander_display.drawStr( 0, 46, "C:New Password");
+  lander_display.drawStr( 0, 58, "E:Exit");
   }
   if (menuOption == 'C'){
-  My_u8g_Panel.setFont(u8g_font_unifont); //16 characters per line
-  My_u8g_Panel.drawStr( 0, 10, "Enter an option:");
-  My_u8g_Panel.drawStr( 0, 22, "A:Sound Pitch");
-  My_u8g_Panel.drawStr( 0, 34, "B:Light");
-  My_u8g_Panel.drawBox(0,35,120,12);
-  My_u8g_Panel.setColorIndex(0);
-  My_u8g_Panel.drawStr( 0, 46, "C:New Password");
-  My_u8g_Panel.setColorIndex(1);
-  My_u8g_Panel.drawStr( 0, 58, "E:Exit");
+  //lander_display.setFont(u8g_font_unifont); //16 characters per line
+  lander_display.drawStr( 0, 10, "Enter an option:");
+  lander_display.drawStr( 0, 22, "A:Sound Pitch");
+  lander_display.drawStr( 0, 34, "B:Light");
+  lander_display.drawBox(0,35,120,12);
+  lander_display.setColorIndex(0);
+  lander_display.drawStr( 0, 46, "C:New Password");
+  lander_display.setColorIndex(1);
+  lander_display.drawStr( 0, 58, "E:Exit");
   }
   if (menuOption == 'E'){
-  My_u8g_Panel.setFont(u8g_font_unifont); //16 characters per line
-  My_u8g_Panel.drawStr( 0, 10, "Enter an option:");
-  My_u8g_Panel.drawStr( 0, 22, "A:Sound Pitch");
-  My_u8g_Panel.drawStr( 0, 34, "B:Light");
-  My_u8g_Panel.drawStr( 0, 46, "C:New Password");
-  My_u8g_Panel.drawBox(0,47,120,12);
-  My_u8g_Panel.setColorIndex(0);
-  My_u8g_Panel.drawStr( 0, 58, "E:Exit");
-  My_u8g_Panel.setColorIndex(1);
+  //lander_display.setFont(u8g_font_unifont); //16 characters per line
+  lander_display.drawStr( 0, 10, "Enter an option:");
+  lander_display.drawStr( 0, 22, "A:Sound Pitch");
+  lander_display.drawStr( 0, 34, "B:Light");
+  lander_display.drawStr( 0, 46, "C:New Password");
+  lander_display.drawBox(0,47,120,12);
+  lander_display.setColorIndex(0);
+  lander_display.drawStr( 0, 58, "E:Exit");
+  lander_display.setColorIndex(1);
   }
 }
 
 void loop() {
   if (access <= 0){
-    My_u8g_Panel.firstPage();  
-    do {
+    // lander_display.firstPage();  
+    // do {
      showPassword();
-    } while( My_u8g_Panel.nextPage() );
+    // } while( lander_display.nextPage() );
     delay(10);
   }
   if (access == 1){
-    My_u8g_Panel.firstPage();  
+    lander_display.firstPage();  
     do {
      showMenu();
-    } while( My_u8g_Panel.nextPage() );
+    } while( lander_display.nextPage() );
     delay(10);
   }
 }
@@ -222,17 +233,20 @@ void loop() {
 //Draw the Enter Password header for menu access
 void passwordHeader(){
   // graphic commands to redraw the complete screen should be placed here  
-  My_u8g_Panel.setFont(u8g_font_unifont);
-  My_u8g_Panel.drawStr( 0, 10, "Enter Password:");
+  //lander_display.setFont(u8g_font_unifont);
+  lander_display.drawStr( 0, 10, "Enter Password:");
 }
 
 void showPassword(){
-  enterPass = String(pw2);
-  //My_u8g_Panel.drawStr( 0, 30, pw1); //pw1 + pw2);
-  My_u8g_Panel.setFont(u8g_font_unifont);
-  My_u8g_Panel.drawStr( 0, 10, "Enter Password:");
-  My_u8g_Panel.setPrintPos(0,22);
-  My_u8g_Panel.print(stars + enterPass);
+  enterPass = stars + String(pw2);
+  lander_display.firstPage();
+   do {
+  //lander_display.drawStr( 0, 30, pw1); //pw1 + pw2);
+  //lander_display.setFont(u8g_font_unifont);
+  lander_display.drawStr( 0, 10, "Enter Password:");
+  lander_display.drawStr( 0, 22, enterPass.c_str());
+  //lander_display.print(stars + enterPass);
+  } while (lander_display.nextPage());
 }
 
 //  This is our ISR which has the job of responding to interrupt events
@@ -330,23 +344,27 @@ void record(){
       if (length == 4){ //entering of password complete, validate if correct
       //Serial.print("length 4 - pw1 = ");
       //Serial.println(pw1);
+      noInterrupts();
         pw1 = (pw1 * multiplier) + pw2;
         //Serial.print("length 4 - pw1 = ");
         //Serial.println(pw1);
         //length = 4;
         if (pw1 == password){
           Serial.println("Looks Good");
-          playSuccess();
-          My_u8g_Panel.firstPage();  
+          //playSuccess();
+          //noInterrupts();
+          RGB_color(125, 0, 0);
+          delay(2200);
+          RGB_color(0, 0, 0);
+          lander_display.firstPage();  
           do {
-            My_u8g_Panel.setFont(u8g_font_unifont);
-            //My_u8g_Panel.drawStr( 0, 10, "Enter Password:");
-            My_u8g_Panel.setPrintPos(0,50);
-            My_u8g_Panel.print("Entering menu...");
+            //lander_display.setFont(u8g_font_unifont);
+            //lander_display.drawStr( 0, 10, "Enter Password:");
+            lander_display.drawStr(0,50,"Entering menu...");
             //delay(20000);
-          } while( My_u8g_Panel.nextPage() );
+          } while( lander_display.nextPage() );
           access = 1;
-          delay(200000);
+          delay(5000);
           return(0);
           //display menu
         }
@@ -358,14 +376,13 @@ void record(){
             Serial.println("Fuck off imposter!");
             Serial.println("Enter the correct password to access the system:");
           //}
-          My_u8g_Panel.firstPage();  
+          lander_display.firstPage();  
           do {
-            My_u8g_Panel.setFont(u8g_font_unifont);
-            //My_u8g_Panel.drawStr( 0, 10, "Enter Password:");
-            My_u8g_Panel.setPrintPos(0,50);
-            My_u8g_Panel.print("Nope...");
+            //lander_display.setFont(u8g_font_unifont);
+            //lander_display.drawStr( 0, 10, "Enter Password:");
+            lander_display.drawStr(0,50,"Nope...");
             //delay(20000);
-          } while( My_u8g_Panel.nextPage() );
+          } while( lander_display.nextPage() );
           delay(2000);
           pw1 = 0;
           pw2 = 0;
@@ -376,6 +393,7 @@ void record(){
           //OurDisplay.clear();
           return(0);
         }
+        interrupts();
       }
       if (length < 4) { //while validating password
       pw1 = (pw1 * multiplier) + pw2;
